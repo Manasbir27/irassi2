@@ -108,7 +108,7 @@ class Searcher:
 
 # Main driver function
 def main():
-    folder_path = "D:/IR/Corpus-20230203T210935Z-001/Corpus"  # Hardcoded path to the corpus folder
+    folder_path = r"C:\Users\Asus\Desktop\irassi2\Corpus"  # Hardcoded path to the corpus folder
     indexer = Indexer()
     indexer.build_index(folder_path)
     searcher = Searcher(indexer)
