@@ -57,9 +57,10 @@ class Indexer:
                 with open(os.path.join(folder_path, filename), 'r', encoding='utf-8') as file:
                     content = file.read()
                     self.index_document(filename, content)
+
 # Step 2: Ranked Retrieval (searching with cosine similarity)
 class Searcher:
-    def _init_(self, indexer):
+    def __init__(self, indexer):
         self.indexer = indexer
 
     def search(self, query):
@@ -91,6 +92,7 @@ class Searcher:
         term_freq = defaultdict(int)
         for token in query_tokens:
             term_freq[token] += 1
+
         query_vector = {}
         query_length = 0  # Magnitude of the query vector
 
@@ -100,6 +102,31 @@ class Searcher:
             idf_weight = math.log10(self.indexer.N / (self.indexer.dictionary[term]['df'] if term in self.indexer.dictionary else 1))
             query_vector[term] = tf_weight * idf_weight
             query_length += (query_vector[term])**2
-        query_length = math.sqrt(query_length)  # Compute the magnitude of the query vector
+
+        query_length = math.sqrt(query_length)  # 
         return query_vector, query_length
-# MAINN
+
+# Main
+def main():
+    folder_path = "D:/IR/Corpus-20230203T210935Z-001/Corpus"  
+    indexer = Indexer()
+    indexer.build_index(folder_path)
+    searcher = Searcher(indexer)
+
+    while True:
+        query = input("Enter your search query (or type 'exit' to quit): ")
+        if query.lower() == 'exit':
+            break
+
+        results = searcher.search(query)
+
+        print("\nTop 10 relevant documents:")
+        if results:
+            for doc_name, score in results:
+                print(f"{doc_name}: Score {score:.10f}")
+        else:
+            print("No relevant documents found.")
+
+# To run the search system, uncomment the line below
+if __name__ == "__main__":
+    main()
