@@ -57,4 +57,49 @@ class Indexer:
                 with open(os.path.join(folder_path, filename), 'r', encoding='utf-8') as file:
                     content = file.read()
                     self.index_document(filename, content)
+# Step 2: Ranked Retrieval (searching with cosine similarity)
+class Searcher:
+    def _init_(self, indexer):
+        self.indexer = indexer
 
+    def search(self, query):
+        """Searches for the top 10 relevant documents based on the query."""
+        query_tokens = preprocess(query)
+        query_vector, query_length = self.compute_query_vector(query_tokens)
+        scores = defaultdict(float)
+
+        # Calculate cosine similarity for each document
+        for term, query_weight in query_vector.items():
+            if term in self.indexer.dictionary:
+                postings = self.indexer.dictionary[term]['postings']
+                idf = math.log10(self.indexer.N / self.indexer.dictionary[term]['df'])
+                for doc_name, tf in postings:
+                    tf_weight = 1 + math.log10(tf)
+                    scores[doc_name] += tf_weight * query_weight * idf
+
+        # Normalize scores by the magnitudes of the document and query vectors
+        for doc_name in scores:
+            if self.indexer.doc_lengths[doc_name] > 0:  # Prevent division by zero
+                scores[doc_name] /= (self.indexer.doc_lengths[doc_name] * query_length)  # Cosine similarity formula
+
+        # Sort by score and return top 10 results
+        ranked_docs = sorted(scores.items(), key=lambda x: (-x[1], x[0]))
+        return ranked_docs[:10]
+
+    def compute_query_vector(self, query_tokens):
+        """Computes the tf-idf vector for the query and returns its magnitude."""
+        term_freq = defaultdict(int)
+        for token in query_tokens:
+            term_freq[token] += 1
+        query_vector = {}
+        query_length = 0  # Magnitude of the query vector
+
+        # Calculate TF-IDF and query length
+        for term, freq in term_freq.items():
+            tf_weight = 1 + math.log10(freq)
+            idf_weight = math.log10(self.indexer.N / (self.indexer.dictionary[term]['df'] if term in self.indexer.dictionary else 1))
+            query_vector[term] = tf_weight * idf_weight
+            query_length += (query_vector[term])**2
+        query_length = math.sqrt(query_length)  # Compute the magnitude of the query vector
+        return query_vector, query_length
+# MAINN
